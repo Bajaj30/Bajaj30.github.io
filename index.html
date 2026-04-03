@@ -1,26 +1,787 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Blog - Shivam Bajaj</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        h1 {
-            color: #333;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wait… Does a Decision Tree Actually Learn Anything?</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #141414;
+      --surface2: #1c1c1c;
+      --border: #2a2a2a;
+      --accent: #e8ff47;
+      --accent2: #ff6b35;
+      --accent3: #47c8ff;
+      --text: #e8e4dc;
+      --muted: #888;
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'Lora', serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* HEADER */
+    header {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .header-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(232,255,71,0.06) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(71,200,255,0.05) 0%, transparent 50%);
+    }
+
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.25rem 0.75rem;
+      display: inline-block;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 7vw, 6rem);
+      font-weight: 800;
+      line-height: 1.05;
+      max-width: 18ch;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 55ch;
+      font-family: var(--font-mono);
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .byline {
+      margin-top: 3rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      animation: bounce 2s infinite;
+    }
+
+    /* MAIN CONTENT */
+    main {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    section { margin-bottom: 5rem; }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+    }
+
+    h2 .accent { color: var(--accent); }
+    h2 .accent2 { color: var(--accent2); }
+    h2 .accent3 { color: var(--accent3); }
+
+    p { margin-bottom: 1.2rem; }
+
+    strong { color: var(--accent); font-weight: 700; }
+    em { font-style: italic; color: #ccc; }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--surface);
+      padding: 1.2rem 1.5rem;
+      margin: 2rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .callout.orange { border-color: var(--accent2); }
+    .callout.blue { border-color: var(--accent3); }
+
+    .callout-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .callout.orange .callout-label { color: var(--accent2); }
+    .callout.blue .callout-label { color: var(--accent3); }
+
+    /* CODE / FORMULA */
+    .formula {
+      font-family: var(--font-mono);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 1.2rem 1.5rem;
+      border-radius: 8px;
+      margin: 1.5rem 0;
+      font-size: 1rem;
+      line-height: 2;
+    }
+
+    .formula .var { color: var(--accent); font-weight: 500; }
+    .formula .val { color: var(--accent3); }
+    .formula .comment { color: var(--muted); font-style: italic; }
+
+    /* COMPARISON TABLE */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .compare-table th {
+      background: var(--surface2);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 500;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+
+    .compare-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table tr:hover td { background: var(--surface); }
+
+    .yes { color: #7eff9a; }
+    .no { color: #ff6b6b; }
+
+    /* INTERACTIVE: REVEAL BOX */
+    .reveal-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 2rem 0;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .reveal-card:hover { border-color: var(--accent); }
+
+    .reveal-header {
+      background: var(--surface);
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .reveal-icon {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      transition: transform 0.3s, background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .reveal-card.open .reveal-icon { transform: rotate(45deg); background: var(--accent); color: #000; border-color: var(--accent); }
+
+    .reveal-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.3s;
+      padding: 0 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    .reveal-card.open .reveal-body {
+      max-height: 600px;
+      padding: 1.2rem 1.5rem;
+    }
+
+    /* QUIZ */
+    .quiz-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .quiz-q {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .quiz-opt {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.8rem 1.2rem;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      transition: all 0.15s;
+      text-align: left;
+      color: var(--text);
+    }
+
+    .quiz-opt:hover { border-color: var(--accent); background: rgba(232,255,71,0.05); }
+    .quiz-opt.correct { border-color: #7eff9a; background: rgba(126,255,154,0.08); color: #7eff9a; }
+    .quiz-opt.wrong { border-color: #ff6b6b; background: rgba(255,107,107,0.08); color: #ff6b6b; }
+
+    .quiz-result {
+      margin-top: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      min-height: 1.5rem;
+      color: var(--muted);
+    }
+
+    /* DIVIDER */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 3rem 0;
+    }
+
+    /* HIGHLIGHT QUOTE */
+    blockquote {
+      font-size: 1.35rem;
+      font-style: italic;
+      font-family: var(--font-body);
+      color: var(--text);
+      border-left: 4px solid var(--accent2);
+      padding-left: 1.5rem;
+      margin: 2.5rem 0;
+      line-height: 1.6;
+    }
+
+    /* VERDICT BOX */
+    .verdict {
+      background: linear-gradient(135deg, rgba(232,255,71,0.06), rgba(71,200,255,0.04));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .verdict-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* PROGRESS BAR */
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent);
+      z-index: 1000;
+      transition: width 0.1s;
+      width: 0%;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(8px); }
+    }
+
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* HIGHLIGHT MARKER */
+    mark {
+      background: rgba(232,255,71,0.15);
+      color: var(--accent);
+      padding: 0.1em 0.3em;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 640px) {
+      header { padding: 3rem 1.2rem; }
+      main { padding: 3rem 1.2rem; }
+      .compare-table { font-size: 0.75rem; }
+    }
+  </style>
 </head>
 <body>
-    <h1>Welcome to My Blog</h1>
-    <p>Hello! This is my personal blog hosted on GitHub Pages.</p>
-    <p>More content coming soon...</p>
+
+  <div id="progress-bar"></div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-bg"></div>
+    <div style="position:relative; max-width: 900px; margin: 0 auto; width:100%;">
+      <div class="tag">ML Internals · Deep Dive</div>
+      <h1>Wait… Does a Decision Tree <em>Actually</em> Learn Anything?</h1>
+      <p class="subtitle">// A rabbit hole that started with "what are parameters" and ended with a real ML insight nobody tells you about.</p>
+      <p class="byline">by Shivam &nbsp;·&nbsp; K.J. Somaiya CE &nbsp;·&nbsp; April 2026</p>
+    </div>
+    <div class="scroll-hint">↓ scroll</div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- SECTION 1: THE QUESTION -->
+    <section class="fade-in">
+      <h2>It started with a simple question 🤔</h2>
+      <p>
+        <em>"What are the parameters of an ML model?"</em>
+      </p>
+      <p>
+        Sounds basic, right? Every ML course covers it in Week 1. But push on it a little — 
+        ask <em>why</em>, ask <em>what does that actually mean</em> — and things get surprisingly deep.
+      </p>
+      <p>
+        Let me walk you through exactly how the rabbit hole went.
+      </p>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- SECTION 2: PARAMS VS HYPERPARAMS -->
+    <section class="fade-in">
+      <h2>The boring part first: <span class="accent">Parameters vs Hyperparameters</span></h2>
+
+      <p>Most people learn this and move on. Here's the clean version:</p>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Parameters</th>
+            <th>Hyperparameters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Who sets them?</td>
+            <td><span class="yes">Model (automatically)</span></td>
+            <td><span class="no">You (manually)</span></td>
+          </tr>
+          <tr>
+            <td>When?</td>
+            <td>During training</td>
+            <td>Before training</td>
+          </tr>
+          <tr>
+            <td>Dataset dependent?</td>
+            <td><span class="yes">✅ Yes</span></td>
+            <td><span class="no">❌ No</span></td>
+          </tr>
+          <tr>
+            <td>Example</td>
+            <td>weights w, bias b</td>
+            <td>learning rate, lambda</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        Best way to picture parameters? Linear Regression.
+      </p>
+
+      <div class="formula">
+        <span class="comment">// Predict house price from size</span><br/>
+        Price = <span class="var">w</span> × Size + <span class="var">b</span><br/><br/>
+        <span class="comment">// After training on Mumbai data:</span><br/>
+        Price = <span class="val">500</span> × Size + <span class="val">20000</span><br/><br/>
+        <span class="comment">// w = 500, b = 20000 → these are the parameters</span><br/>
+        <span class="comment">// Train on Nagpur data → different w, different b</span>
+      </div>
+
+      <p>
+        The model figured out <strong>500</strong> and <strong>20,000</strong> by minimizing error on your training data. 
+        You didn't set them. The data shaped them. That's what "dataset dependent" means.
+      </p>
+
+      <p>
+        Scale this up: GPT-4 has <strong>~1.8 trillion parameters</strong>. Same idea — just 1.8 trillion 
+        <em>w</em>s and <em>b</em>s, all tuned to fit the training data.
+      </p>
+    </section>
+
+    <!-- QUIZ 1 -->
+    <div class="quiz-box fade-in">
+      <div class="quiz-q">Quick check — which of these is a hyperparameter?</div>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="answer(this, false)">The weights of a neural network</button>
+        <button class="quiz-opt" onclick="answer(this, false)">The bias term in logistic regression</button>
+        <button class="quiz-opt" onclick="answer(this, true)">The learning rate in gradient descent</button>
+        <button class="quiz-opt" onclick="answer(this, false)">The split threshold in a decision tree node</button>
+      </div>
+      <div class="quiz-result" id="q1-result"></div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- SECTION 3: DT QUESTION -->
+    <section class="fade-in">
+      <h2>Then we got to <span class="accent2">Decision Trees.</span> And things got interesting.</h2>
+
+      <p>
+        So what are the parameters of a Decision Tree? The model learns:
+      </p>
+
+      <div class="callout orange">
+        <div class="callout-label">DT Parameters (learned from data)</div>
+        <strong>Split feature</strong> at each node (e.g. "use Age to split here")<br/>
+        <strong>Split threshold</strong> at each node (e.g. "Age &gt; 30")<br/>
+        <strong>Tree structure</strong> — how the branches form<br/>
+        <strong>Leaf values</strong> — final prediction at each leaf
+      </div>
+
+      <p>And the tool it uses to find these? <strong>Information Gain</strong> (or Gini). You set <em>which criterion</em> to use — that's the hyperparameter. The result of using it (which feature, which threshold) is the parameter.</p>
+
+      <blockquote>
+        "IG is like a ruler. The ruler helps you measure. But the measurement you write down — that's the parameter."
+      </blockquote>
+
+      <p>
+        Seems clean, right? Parameters ✅. Hyperparameters ✅.
+      </p>
+      <p>
+        But then came the question that cracked everything open.
+      </p>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- SECTION 4: THE REAL INSIGHT -->
+    <section class="fade-in">
+      <h2>🤯 But wait — <span class="accent">does a DT actually learn?</span></h2>
+
+      <p>
+        Here's the thought: if <strong>Information Gain (a hyperparameter)</strong> directly determines 
+        <strong>which feature becomes a parameter</strong>, then how much is the model actually <em>learning</em>… 
+        and how much is it just mechanically executing a formula you chose?
+      </p>
+
+      <p>Is a Decision Tree genuinely learning? Or is it just doing math you told it to do?</p>
+
+      <!-- REVEAL: THE ANSWER -->
+      <div class="reveal-card" onclick="toggleReveal(this)">
+        <div class="reveal-header">
+          <span>Think about it first, then click to reveal 👇</span>
+          <div class="reveal-icon">+</div>
+        </div>
+        <div class="reveal-body">
+          <p>
+            This is the <strong>parametric vs non-parametric</strong> distinction — and it's something most ML courses skip entirely.
+          </p>
+          <p>
+            <strong>Linear/Logistic Regression</strong> is <mark>parametric</mark>. It assumes a fixed functional form 
+            (a line, a plane), then genuinely <em>optimizes</em> w and b by minimizing a loss function using gradient descent. 
+            The model is doing real mathematical reasoning — iteratively adjusting, globally searching for the best values.
+          </p>
+          <p>
+            <strong>Decision Trees</strong> are <mark>non-parametric</mark>. There's no loss function being minimized. 
+            No gradient. No global optimization. It's a <strong>greedy algorithm</strong> — at each node, 
+            just pick the locally best split right now using IG/Gini, and move on. 
+            It never goes back and reconsiders.
+          </p>
+          <p style="color: var(--accent2); font-weight: bold;">
+            DT "parameters" aren't learned in the same sense — they're <em>stored decisions</em> from a greedy mechanical process.
+          </p>
+        </div>
+      </div>
+
+      <div class="callout blue">
+        <div class="callout-label">The key difference</div>
+        Regression finds the globally optimal w and b by minimizing error across all data simultaneously.<br/><br/>
+        A Decision Tree just makes the best local decision at each node, one at a time, never looking back.
+      </div>
+
+      <p>
+        This is why you'll hear ML engineers say <em>"a standalone decision tree is a weak learner."</em> 
+        Not just because it overfits — but because its whole learning process is fundamentally local and greedy.
+      </p>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- SECTION 5: SO WHY DTs -->
+    <section class="fade-in">
+      <h2>Then why use Decision Trees <span class="accent">at all?</span></h2>
+
+      <p>Fair question. If DTs don't truly optimize, what's the point?</p>
+
+      <div class="reveal-card" onclick="toggleReveal(this)">
+        <div class="reveal-header">
+          <span>Hint: it's not computation speed 🤔</span>
+          <div class="reveal-icon">+</div>
+        </div>
+        <div class="reveal-body">
+          <ul style="padding-left: 1.2rem; line-height: 2.2;">
+            <li><strong>Non-linear decision boundaries</strong> — regression draws lines; DTs carve the space in any shape</li>
+            <li><strong>Interpretability</strong> — you can literally read the tree and explain every decision. Try that with a neural net.</li>
+            <li><strong>No feature scaling needed</strong> — Age=30 and Income=500000 coexist fine</li>
+            <li><strong>Handles mixed data types</strong> — categorical and numerical features together</li>
+            <li><strong>Fast inference</strong> — traversing a tree is O(depth)</li>
+          </ul>
+        </div>
+      </div>
+
+      <p style="margin-top: 1.5rem;">
+        And here's the kicker — the greedy weakness of individual DTs is exactly <em>why</em> ensembles exist.
+      </p>
+
+      <blockquote>
+        Random Forest and XGBoost don't just use many trees — they're designed to compensate for the greedy nature of individual trees by aggregating or boosting across many of them.
+      </blockquote>
+
+      <p>
+        The limitation of a single DT is the very <strong>reason Random Forest works.</strong> 
+        One greedy tree = weak. A thousand slightly different greedy trees, averaged = surprisingly powerful.
+      </p>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- QUIZ 2 -->
+    <div class="quiz-box fade-in">
+      <div class="quiz-q">Which statement correctly describes a Decision Tree's "learning"?</div>
+      <div class="quiz-options">
+        <button class="quiz-opt" onclick="answer2(this, false)">It minimizes a global loss function using gradient descent</button>
+        <button class="quiz-opt" onclick="answer2(this, true)">It makes greedy local split decisions at each node using IG/Gini</button>
+        <button class="quiz-opt" onclick="answer2(this, false)">It learns weights and biases like a neural network</button>
+        <button class="quiz-opt" onclick="answer2(this, false)">It's fully parametric, just like logistic regression</button>
+      </div>
+      <div class="quiz-result" id="q2-result"></div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- SECTION 6: TL;DR -->
+    <section class="fade-in">
+      <h2>The full picture 🗺️</h2>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Parameters</th>
+            <th>How Learned</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Linear Regression</td>
+            <td>w, b</td>
+            <td>Gradient Descent (global optimization)</td>
+          </tr>
+          <tr>
+            <td>Logistic Regression</td>
+            <td>w, b</td>
+            <td>Gradient Descent (global optimization)</td>
+          </tr>
+          <tr>
+            <td>Decision Tree</td>
+            <td>split feature, threshold, leaf values</td>
+            <td>Greedy IG/Gini (local decisions)</td>
+          </tr>
+          <tr>
+            <td>Neural Network</td>
+            <td>w, b per neuron (millions)</td>
+            <td>Backprop + Gradient Descent</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="verdict fade-in">
+        <div class="verdict-title">🏁 Final Verdict</div>
+        <p>
+          <strong>Parameters are always learned from data.</strong> But <em>how</em> they're learned varies wildly. 
+          Regression and neural networks genuinely optimize — they find globally good values. 
+          Decision Trees store greedy decisions — locally optimal, but never globally reasoned.
+        </p>
+        <p style="margin-top: 0.8rem; color: var(--muted); font-family: var(--font-mono); font-size: 0.85rem;">
+          This is why "parametric vs non-parametric" is a real axis of model comparison — not just textbook trivia.
+        </p>
+      </div>
+    </section>
+
+    <!-- CLOSING -->
+    <section class="fade-in">
+      <h2>Why does any of this <span class="accent">matter?</span></h2>
+      <p>
+        It matters when you're choosing models. When someone asks you <em>"why not just always use a DT?"</em> 
+        you now have a real answer — not "it overfits" (everyone says that), but that it lacks a global optimization objective, 
+        making it inherently limited as a standalone learner.
+      </p>
+      <p>
+        It matters in interviews. "What does a Decision Tree actually learn?" is a question that separates people 
+        who used sklearn from people who understand what's happening underneath.
+      </p>
+      <p>
+        And honestly — it matters because <strong>questioning the obvious is the actual skill.</strong> 
+        Most people learn "DT uses IG to split" and move on. 
+        Asking <em>wait, but then is it actually learning anything?</em> is how you find real insights.
+      </p>
+      <p style="color: var(--muted); font-style: italic; margin-top: 2rem;">
+        This whole post came from one conversation where someone refused to accept a surface-level answer. 
+        That's the energy.
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>written by Shivam &nbsp;·&nbsp; K.J. Somaiya School of Engineering, Mumbai</p>
+    <p style="margin-top: 0.5rem; color: #555;">ML Engineering · 2026</p>
+  </footer>
+
+  <script>
+    // Progress bar
+    window.addEventListener('scroll', () => {
+      const scrolled = window.scrollY;
+      const total = document.body.scrollHeight - window.innerHeight;
+      document.getElementById('progress-bar').style.width = (scrolled / total * 100) + '%';
+    });
+
+    // Fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Reveal cards
+    function toggleReveal(card) {
+      card.classList.toggle('open');
+    }
+
+    // Quiz 1
+    function answer(btn, correct) {
+      const opts = btn.closest('.quiz-options').querySelectorAll('.quiz-opt');
+      opts.forEach(o => o.disabled = true);
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      if (!correct) {
+        opts[2].classList.add('correct');
+      }
+      document.getElementById('q1-result').textContent = correct
+        ? '✅ Correct! Learning rate is set by you before training — classic hyperparameter.'
+        : '❌ Nope. That one is set by you, not learned. Learning rate it is.';
+    }
+
+    // Quiz 2
+    function answer2(btn, correct) {
+      const opts = btn.closest('.quiz-options').querySelectorAll('.quiz-opt');
+      opts.forEach(o => o.disabled = true);
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      if (!correct) opts[1].classList.add('correct');
+      document.getElementById('q2-result').textContent = correct
+        ? '✅ Exactly. Greedy, local, no backtracking. That\'s the DT way.'
+        : '❌ That\'s how regression/NNs work, not DTs. DTs are greedy at each node.';
+    }
+  </script>
 </body>
 </html>
-```
