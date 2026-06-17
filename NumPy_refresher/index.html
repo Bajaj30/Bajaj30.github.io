@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NumPy Field Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #EEF1F5;
+      --line: rgba(22, 33, 62, 0.08);
+      --line-soft: rgba(22, 33, 62, 0.05);
+      --surface: #FFFFFF;
+      --surface-2: #F6F8FA;
+      --ink: #16213E;
+      --ink-soft: #5B6781;
+      --accent: #2E6F95;
+      --accent-light: #6FA8C8;
+      --highlight: #F2A93B;
+      --highlight-soft: #FBE3BB;
+      --good: #3F8361;
+      --good-soft: #DCEEE2;
+      --bad: #C75146;
+      --bad-soft: #F7DEDA;
+      --code-bg: #101826;
+      --code-ink: #D7E0EA;
+      --code-comment: #7C8FA6;
+      --code-fn: #F2A93B;
+      --code-out: #9FCDB0;
+      --radius: 10px;
+      --maxw: 1280px;
+      --topbar-h: 64px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(var(--line-soft) 1px, transparent 1px) 0 0/100% 28px,
+        linear-gradient(90deg, var(--line-soft) 1px, transparent 1px) 0 0/28px 100%,
+        var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    ::selection {
+      background: var(--highlight-soft);
+    }
+
+    /* topbar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(238, 241, 245, 0.86);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.18rem;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .brand .dot {
+      color: var(--highlight);
+    }
+
+    .tagline {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      display: none;
+    }
+
+    @media(min-width:760px) {
+      .tagline {
+        display: inline;
+      }
+    }
+
+    /* layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 252px 1fr;
+      max-width: var(--maxw);
+      margin: 0 auto;
+    }
+
+    @media(max-width:900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sidenav {
+      position: sticky;
+      top: var(--topbar-h);
+      align-self: start;
+      height: calc(100vh - var(--topbar-h));
+      overflow-y: auto;
+      padding: 22px 12px 40px;
+      border-right: 1px solid var(--line);
+    }
+
+    .sidenav a {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: var(--ink-soft);
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 500;
+      margin-bottom: 1px;
+      transition: background .15s, color .15s;
+    }
+
+    .sidenav a .n {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-size: 0.74rem;
+      flex: 0 0 18px;
+    }
+
+    .sidenav a:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+
+    .sidenav a.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: inset 3px 0 0 var(--highlight);
+    }
+
+    @media(max-width:900px) {
+      .sidenav {
+        position: sticky;
+        top: var(--topbar-h);
+        height: auto;
+        display: flex;
+        overflow-x: auto;
+        gap: 2px;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        padding: 10px 14px;
+        background: var(--bg);
+        z-index: 55;
+      }
+
+      .sidenav a {
+        white-space: nowrap;
+        margin-bottom: 0;
+      }
+    }
+
+    .content {
+      padding: 44px 40px 110px;
+    }
+
+    @media(max-width:640px) {
+      .content {
+        padding: 30px 18px 90px;
+      }
+    }
+
+    .section {
+      margin-bottom: 78px;
+      scroll-margin-top: calc(var(--topbar-h) + 14px);
+    }
+
+    .section h2 {
+      font-family: var(--font-display);
+      font-size: 1.55rem;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 8px;
+    }
+
+    .section h2 .num {
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .section .lede {
+      color: var(--ink-soft);
+      margin: 0 0 22px;
+      max-width: 660px;
+      font-size: 1rem;
+    }
+
+    .section h3 {
+      font-family: var(--font-display);
+      font-size: 1.02rem;
+      margin: 30px 0 10px;
+      color: var(--ink);
+    }
+
+    .section p {
+      max-width: 680px;
+    }
+
+    .section p.wide {
+      max-width: none;
+    }
+
+    /* hero */
+    .hero {
+      padding-top: 6px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    @media(max-width:900px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+      line-height: 1.14;
+      margin: 0 0 16px;
+    }
+
+    .hero p {
+      color: var(--ink-soft);
+      font-size: 1.04rem;
+      max-width: 480px;
+    }
+
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--highlight);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* notebook cells */
+    .nb-cell {
+      position: relative;
+      background: var(--code-bg);
+      border-radius: var(--radius);
+      margin: 18px 0;
+      overflow: hidden;
+      box-shadow: 0 1px 0 var(--line);
+    }
+
+    .nb-in,
+    .nb-out {
+      display: flex;
+      gap: 12px;
+      padding: 13px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .nb-out {
+      background: rgba(255, 255, 255, 0.025);
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .nb-tag {
+      flex: 0 0 38px;
+      user-select: none;
+      font-size: 0.72rem;
+      padding-top: 2px;
+    }
+
+    .nb-in .nb-tag {
+      color: var(--code-fn);
+    }
+
+    .nb-out .nb-tag {
+      color: var(--code-comment);
+    }
+
+    .nb-code {
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--code-ink);
+      flex: 1;
+      margin: 0;
+    }
+
+    .nb-out .nb-code {
+      color: var(--code-out);
+    }
+
+    .cm {
+      color: var(--code-comment);
+      font-style: italic;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 9px;
+      right: 11px;
+      background: none;
+      border: 1px solid rgba(255, 255, 255, .16);
+      color: var(--code-comment);
+      font-size: 0.68rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      z-index: 2;
+    }
+
+    .copy-btn:hover {
+      color: var(--code-ink);
+      border-color: var(--code-ink);
+    }
+
+    /* callouts */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 20px 0;
+      font-size: 0.92rem;
+      border-left: 4px solid;
+      max-width: 680px;
+    }
+
+    .callout.tip {
+      background: var(--good-soft);
+      border-color: var(--good);
+    }
+
+    .callout.warn {
+      background: var(--bad-soft);
+      border-color: var(--bad);
+    }
+
+    .callout b {
+      display: block;
+      margin-bottom: 4px;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    .callout.tip b {
+      color: var(--good);
+    }
+
+    .callout.warn b {
+      color: var(--bad);
+    }
+
+    /* interactive grid widgets */
+    .grid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 22px 0;
+      max-width: 680px;
+    }
+
+    .shape-caption {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+    }
+
+    table.agrid {
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+    }
+
+    table.agrid td {
+      width: 42px;
+      height: 34px;
+      text-align: center;
+      border: 1px solid var(--line);
+    }
+
+    table.agrid td.cell {
+      background: var(--surface-2);
+      font-weight: 500;
+      transition: background .12s;
+    }
+
+    table.agrid td.ridx,
+    table.agrid td.cidx {
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 600;
+      background: none;
+      border: none;
+      user-select: none;
+    }
+
+    table.agrid td.ridx:hover,
+    table.agrid td.cidx:hover {
+      color: var(--highlight);
+    }
+
+    table.agrid td.corner {
+      border: none;
+    }
+
+    table.agrid td.cell.hl {
+      background: var(--highlight-soft);
+      box-shadow: inset 0 0 0 2px var(--highlight);
+    }
+
+    .axis-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .axis-controls button {
+      font-family: var(--font-body);
+      font-size: 0.79rem;
+      padding: 7px 13px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      cursor: pointer;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .axis-controls button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .axis-result {
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      min-height: 1.4em;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .axis-result b {
+      color: var(--accent);
+    }
+
+    /* mask demo */
+    table.mask-table td {
+      padding: 0 10px;
+    }
+
+    table.mask-table tr.hl-row td.cell,
+    table.mask-table tr.hl-row td.ridx {
+      background: var(--highlight-soft);
+    }
+
+    table.mask-table tr.hl-row td.ridx {
+      color: var(--highlight);
+      font-weight: 700;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .chip.k0 {
+      background: var(--good-soft);
+      color: var(--good);
+    }
+
+    .chip.k1 {
+      background: var(--highlight-soft);
+      color: #8a5d12;
+    }
+
+    /* reshape demo */
+    .reshape-grid {
+      display: grid;
+      gap: 5px;
+      margin-bottom: 16px;
+    }
+
+    .reshape-grid .cell {
+      width: 42px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+    }
+
+    .pulse {
+      animation: pulse .28s ease;
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: .25;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* broadcast demo */
+    .bcast-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .bcast-row .cell {
+      width: 48px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.83rem;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+
+    .bcast-row.vec .cell {
+      background: var(--highlight-soft);
+      border-color: var(--highlight);
+      font-weight: 600;
+    }
+
+    .bcast-arrow {
+      font-size: 0.8rem;
+      color: var(--ink-soft);
+      margin: 2px 0 12px;
+    }
+
+    .bcast-result {
+      display: none;
+      margin-top: 4px;
+    }
+
+    .bcast-result.show {
+      display: block;
+      animation: fadein .4s ease;
+    }
+
+    @keyframes fadein {
+      from {
+        opacity: 0;
+        transform: translateY(-5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .bcast-result .cell {
+      background: var(--good-soft);
+      border-color: var(--good);
+      color: #205a3c;
+      font-weight: 600;
+    }
+
+    /* cheat sheet */
+    .cheat-search {
+      width: 100%;
+      max-width: 380px;
+      padding: 11px 15px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      margin-bottom: 18px;
+      background: var(--surface);
+      display: block;
+    }
+
+    .cheat-search:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .cheat-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+    }
+
+    table.cheat {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      background: var(--surface);
+      min-width: 640px;
+    }
+
+    table.cheat th {
+      text-align: left;
+      background: var(--surface-2);
+      padding: 11px 16px;
+      font-family: var(--font-display);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--ink-soft);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+    }
+
+    table.cheat td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line-soft);
+      vertical-align: top;
+    }
+
+    table.cheat td.fn {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    table.cheat td.cat {
+      color: var(--ink-soft);
+      white-space: nowrap;
+      font-size: 0.8rem;
+    }
+
+    table.cheat td.ex {
+      font-family: var(--font-mono);
+      font-size: 0.81rem;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    table.cheat tr.hidden {
+      display: none;
+    }
+
+    table.cheat tbody tr:hover {
+      background: var(--surface-2);
+    }
+
+    /* lookup table (section 11) */
+    table.lookup {
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      max-width: 680px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table.lookup th {
+      text-align: left;
+      background: var(--surface-2);
+      padding: 10px 14px;
+      font-family: var(--font-display);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--ink-soft);
+    }
+
+    table.lookup td {
+      padding: 10px 14px;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    table.lookup td:first-child {
+      font-family: var(--font-mono);
+      color: var(--ink-soft);
+    }
+
+    table.lookup td:last-child {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    ol.strategy {
+      padding-left: 1.1em;
+      max-width: 680px;
+    }
+
+    ol.strategy li {
+      margin-bottom: 10px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 44px 20px 60px;
+      color: var(--ink-soft);
+      font-size: 0.82rem;
+      border-top: 1px solid var(--line);
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      html {
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <a href="#s00" class="brand">NumPy<span class="dot">·</span>Field Notes</a>
+    <span class="tagline">so the next assignment doesn't stall on syntax</span>
+  </header>
+
+  <div class="layout">
+    <nav class="sidenav" id="sidenav">
+      <a href="#s00"><span class="n">00</span>Start here</a>
+      <a href="#s01"><span class="n">01</span>Creating arrays</a>
+      <a href="#s02"><span class="n">02</span>Shape &amp; reshaping</a>
+      <a href="#s03"><span class="n">03</span>Indexing &amp; masks</a>
+      <a href="#s04"><span class="n">04</span>The axis parameter</a>
+      <a href="#s05"><span class="n">05</span>Broadcasting</a>
+      <a href="#s06"><span class="n">06</span>Reductions &amp; arg-*</a>
+      <a href="#s07"><span class="n">07</span>Linear algebra</a>
+      <a href="#s08"><span class="n">08</span>Vectorization</a>
+      <a href="#s09"><span class="n">09</span>Common mistakes</a>
+      <a href="#s10"><span class="n">10</span>Cheat sheet</a>
+      <a href="#s11"><span class="n">11</span>When you're stuck</a>
+    </nav>
+
+    <main class="content">
+
+      <!-- 00 HERO -->
+      <section class="section hero" id="s00">
+        <div class="hero-grid">
+          <div>
+            <span class="kicker">Mental model</span>
+            <h1>An array is just a box of numbers with a shape attached.</h1>
+            <p>Almost every numpy bug is a shape bug, not a logic bug. Once you can read a shape and predict what an
+              operation does to it, the functions themselves stop mattering as much — you just look them up. That's what
+              this page is for: a single place to come back to mid-assignment when you've forgotten a name or a rule.
+            </p>
+            <p>In machine learning code, rows are usually <b>examples</b> and columns are usually <b>features</b>. Click
+              a row or column index on the right to see what slicing actually returns.</p>
+          </div>
+          <div id="w-hero"></div>
+        </div>
+      </section>
+
+      <!-- 01 CREATING ARRAYS -->
+      <section class="section" id="s01">
+        <h2><span class="num">01</span>Creating arrays</h2>
+        <p class="lede">Most assignments start by either building a small array by hand, or generating one with a helper
+          function. These five cover almost every case you'll need.</p>
+
+        <h3>From a Python list</h3>
+        <p><code>np.array()</code> wraps a list or nested list into an ndarray. Nesting depth becomes dimensionality: a
+          list of numbers becomes 1D, a list of lists becomes 2D.</p>
+        <div class="nb-cell" id="c-01-1"></div>
+
+        <h3>Pre-filled arrays</h3>
+        <p>These are for when you know the shape before you know the values — common for initializing centroids,
+          accumulators, or placeholders.</p>
+        <div class="nb-cell" id="c-01-2"></div>
+
+        <h3>Ranges</h3>
+        <p><code>arange</code> behaves like Python's <code>range</code> (stop is excluded). <code>linspace</code> is
+          different on purpose: you give it a count, not a step, and the endpoint <em>is</em> included.</p>
+        <div class="nb-cell" id="c-01-3"></div>
+
+        <h3>Random arrays</h3>
+        <p><code>np.random.seed()</code> fixes the random stream so your output is reproducible — call it once near the
+          top of a cell before any random call you want to be able to repeat.</p>
+        <div class="nb-cell" id="c-01-4"></div>
+      </section>
+
+      <!-- 02 SHAPE & RESHAPING -->
+      <section class="section" id="s02">
+        <h2><span class="num">02</span>Shape &amp; reshaping</h2>
+        <p class="lede">Shape is the single most useful thing to check when something goes wrong. Three attributes and a
+          handful of functions cover it.</p>
+        <div class="nb-cell" id="c-02-1"></div>
+        <p>Reshaping never changes the data, only how it's laid out. The same 12 values can be arranged as a flat row, a
+          3×4 grid, a 4×3 grid, and so on — try it below.</p>
+        <div id="w-reshape"></div>
+        <h3>Transpose and adding axes</h3>
+        <p><code>.T</code> swaps rows and columns. <code>[:, None]</code> (or <code>np.newaxis</code>) turns a 1D vector
+          into a column; it's the trick behind a lot of broadcasting magic later on.</p>
+        <div class="nb-cell" id="c-02-2"></div>
+        <div class="callout tip"><b>Quick check</b>Whenever a result "looks wrong," the first thing to print is
+          <code>.shape</code> — not the values. A shape mismatch is almost always the actual bug.
+        </div>
+      </section>
+
+      <!-- 03 INDEXING & MASKS -->
+      <section class="section" id="s03">
+        <h2><span class="num">03</span>Indexing &amp; boolean masks</h2>
+        <p class="lede">Slicing works like Python lists. Boolean masking is the part that feels new — and it's exactly
+          what <code>compute_centroids</code> needed.</p>
+        <div class="nb-cell" id="c-03-1"></div>
+
+        <h3>Boolean masks — the K-means pattern</h3>
+        <p><code>idx == k</code> doesn't compare the whole array at once — it builds a new array of
+          <code>True</code>/<code>False</code>, one per row, and <code>X[mask]</code> keeps only the rows where it's
+          <code>True</code>. This is exactly how <code>compute_centroids</code> finds "all points assigned to cluster k"
+          without writing a filter loop.
+        </p>
+        <div id="w-mask"></div>
+        <div class="nb-cell" id="c-03-2"></div>
+        <p><code>np.where(condition)</code> gives you the indices instead of the filtered values — useful when you need
+          positions, not contents.</p>
+      </section>
+
+      <!-- 04 AXIS -->
+      <section class="section" id="s04">
+        <h2><span class="num">04</span>The axis parameter</h2>
+        <p class="lede">This is the one that trips up almost everyone at first. <code>axis</code> names the dimension
+          that gets <b>collapsed</b> — not the one that survives.</p>
+        <p>Below: three students, four quizzes. Rows are students, columns are quizzes. Click a row/column index, or use
+          the buttons to collapse a whole axis at once.</p>
+        <div id="w-axis"></div>
+        <div class="callout tip"><b>Memory trick</b><code>axis=0</code> walks down the rows, so it collapses rows and
+          leaves one value per column. <code>axis=1</code> walks across the columns, so it collapses columns and leaves
+          one value per row. If you're not sure, check which dimension disappeared in the output shape — that's the axis
+          you used.</div>
+        <div class="nb-cell" id="c-04-1"></div>
+      </section>
+
+      <!-- 05 BROADCASTING -->
+      <section class="section" id="s05">
+        <h2><span class="num">05</span>Broadcasting</h2>
+        <p class="lede">Broadcasting is how numpy lets you combine arrays of different shapes without writing a loop to
+          line them up yourself.</p>
+        <p>The rule, compared from the <em>right-hand side</em> of each shape: two dimensions are compatible if they're
+          equal, or if one of them is 1 (it gets stretched to match). A vector of shape <code>(3,)</code> can be added
+          to every row of a <code>(2, 3)</code> matrix because numpy treats the vector as <code>(1, 3)</code> and
+          stretches it down to 2 rows.</p>
+        <div id="w-broadcast"></div>
+        <div class="nb-cell" id="c-05-1"></div>
+        <div class="callout warn"><b>Where it fails</b>If the trailing dimensions don't match and neither is 1, you'll
+          get <code>ValueError: operands could not be broadcast together</code>. The fix is almost always reshaping one
+          side with <code>[:, None]</code> or <code>[None, :]</code> so the shapes line up on purpose.</div>
+      </section>
+
+      <!-- 06 REDUCTIONS & ARG -->
+      <section class="section" id="s06">
+        <h2><span class="num">06</span>Reductions &amp; the arg-* convention</h2>
+        <p class="lede">Reductions turn many numbers into fewer. The naming convention for finding <em>where</em>
+          something happens is consistent enough to guess from.</p>
+        <div class="nb-cell" id="c-06-1"></div>
+        <div class="callout tip"><b>Naming convention</b>Any numpy function starting with <code>arg</code> —
+          <code>argmin</code>, <code>argmax</code>, <code>argsort</code>, <code>argwhere</code> — returns an
+          <b>index</b>, not a value. Once you've noticed this once, you can guess the rest without looking them up.
+        </div>
+        <div class="nb-cell" id="c-06-2"></div>
+      </section>
+
+      <!-- 07 LINEAR ALGEBRA -->
+      <section class="section" id="s07">
+        <h2><span class="num">07</span>Linear algebra essentials</h2>
+        <p class="lede">Most ML assignments only need a handful of <code>linalg</code> functions. If a problem mentions
+          distance, magnitude, or "norm," this is the first place to look.</p>
+        <div class="nb-cell" id="c-07-1"></div>
+        <p><code>np.linalg.norm</code> also takes an <code>axis</code> argument, so you can get the distance from every
+          row of a matrix to a single point in one call — no loop required.</p>
+        <div class="nb-cell" id="c-07-2"></div>
+        <h3>Dot product vs. elementwise multiply</h3>
+        <p>These two look similar and do very different things. <code>*</code> multiplies position-by-position;
+          <code>@</code> (or <code>np.dot</code>/<code>np.matmul</code>) does real matrix multiplication.
+        </p>
+        <div class="nb-cell" id="c-07-3"></div>
+      </section>
+
+      <!-- 08 VECTORIZATION -->
+      <section class="section" id="s08">
+        <h2><span class="num">08</span>Vectorization: trading loops for shape tricks</h2>
+        <p class="lede">The double <code>for</code> loop in <code>find_closest_centroids</code> is written that way
+          deliberately, to teach the logic clearly. Once the logic clicks, here's the version with no loop at all — same
+          answer, using only what's in sections 04 and 05.</p>
+        <div class="nb-cell" id="c-08-1"></div>
+        <p>The trick is <code>X[:, None, :]</code> turning <code>X</code> into shape <code>(m, 1, n)</code> and
+          <code>centroids[None, :, :]</code> turning centroids into <code>(1, K, n)</code>. Broadcasting stretches them
+          against each other into <code>(m, K, n)</code> — every point compared against every centroid at once — then
+          <code>norm(..., axis=2)</code> collapses the feature dimension, leaving an <code>(m, K)</code> distance table.
+        </p>
+        <div class="callout tip"><b>You don't need this for the assignment</b>The loop version is correct and is what's
+          graded. This is here for when you want to see where the "no loops" style in real ML code comes from.</div>
+      </section>
+
+      <!-- 09 COMMON MISTAKES -->
+      <section class="section" id="s09">
+        <h2><span class="num">09</span>Common mistakes</h2>
+        <p class="lede">Six things that look like logic bugs but are actually syntax or shape bugs.</p>
+
+        <h3>1. Wrong axis</h3>
+        <p>Swapping <code>axis=0</code> and <code>axis=1</code> still runs without error — it just silently gives you
+          the wrong numbers. Always sanity-check the output shape against what you expected to collapse.</p>
+
+        <h3>2. Slicing returns a view, not a copy</h3>
+        <p>Modifying a slice modifies the original array too, because slicing shares the same underlying memory.</p>
+        <div class="nb-cell" id="c-09-1"></div>
+        <p>Use <code>.copy()</code> when you need an independent array.</p>
+
+        <h3>3. Integer dtype silently truncates</h3>
+        <div class="nb-cell" id="c-09-2"></div>
+        <p>If an array was created with an integer dtype (often via <code>np.zeros(n, dtype=int)</code>), assigning a
+          float into it gets truncated, not rounded — with no warning.</p>
+
+        <h3>4. Comparing floats with <code>==</code></h3>
+        <div class="nb-cell" id="c-09-3"></div>
+        <p>Floating point arithmetic is approximate. Use <code>np.isclose</code> instead of <code>==</code> whenever
+          you're comparing computed floats.</p>
+
+        <h3>5. Broadcasting error from mismatched trailing dimensions</h3>
+        <p>Covered in section 05 — the fix is almost always an explicit <code>[:, None]</code> reshape on one side.</p>
+
+        <h3>6. Forgetting that reductions remove a dimension</h3>
+        <p><code>X.sum(axis=1)</code> on a <code>(m, n)</code> array returns shape <code>(m,)</code>, not
+          <code>(m, 1)</code>. If you need to broadcast the result back against the original array, you may need
+          <code>keepdims=True</code> to keep that dimension as length 1 instead of dropping it.
+        </p>
+      </section>
+
+      <!-- 10 CHEAT SHEET -->
+      <section class="section" id="s10">
+        <h2><span class="num">10</span>Cheat sheet</h2>
+        <p class="lede">Every function above, plus a few extras, in one searchable table.</p>
+        <input type="text" class="cheat-search" id="cheat-search"
+          placeholder="Search functions, categories, or descriptions…">
+        <div class="cheat-wrap">
+          <table class="cheat">
+            <thead>
+              <tr>
+                <th>Function</th>
+                <th>Category</th>
+                <th>What it does</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody id="cheat-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 11 WHEN YOU'RE STUCK -->
+      <section class="section" id="s11">
+        <h2><span class="num">11</span>When you're stuck</h2>
+        <p class="lede">The actual skill isn't memorizing function names — it's knowing how to find the right one fast.
+        </p>
+        <ol class="strategy">
+          <li>Restate what you're trying to do in plain English before touching code. "The norm between x(i) and
+            centroid j" is a search query in disguise.</li>
+          <li>If the problem mentions distance, magnitude, or a matrix operation, check <code>np.linalg</code> first —
+            most linear-algebra-flavored functions live there.</li>
+          <li>If a function name starts with <code>arg</code>, it returns an index, not a value. You can often guess the
+            right function exists before you've looked it up.</li>
+          <li>If a reduction "isn't doing what I expect," print the shape of the result. The axis that's missing from
+            the new shape is the one that got collapsed — that tells you immediately if you used the wrong one.</li>
+          <li>Search "numpy + plain English description" rather than guessing at function names — "numpy index of
+            minimum value," not "numpy minarg."</li>
+        </ol>
+        <h3>Translating math notation into numpy</h3>
+        <table class="lookup">
+          <thead>
+            <tr>
+              <th>You see in the assignment</th>
+              <th>Reach for</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>‖x − y‖</td>
+              <td>np.linalg.norm(x - y)</td>
+            </tr>
+            <tr>
+              <td>argmin / argmax over j</td>
+              <td>np.argmin(...) / np.argmax(...)</td>
+            </tr>
+            <tr>
+              <td>(1/|C|) · Σ x</td>
+              <td>np.mean(..., axis=...)</td>
+            </tr>
+            <tr>
+              <td>Σ x</td>
+              <td>np.sum(..., axis=...)</td>
+            </tr>
+            <tr>
+              <td>x ∈ ℝⁿ (one vector)</td>
+              <td>shape (n,)</td>
+            </tr>
+            <tr>
+              <td>X ∈ ℝᵘᵃᵉ (a dataset)</td>
+              <td>shape (m, n)</td>
+            </tr>
+            <tr>
+              <td>random pick, no repeats</td>
+              <td>np.random.permutation(...)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <footer>NumPy Field Notes — built for whatever assignment you've got open right now.</footer>
+
+  <script>
+    /* ---------- helpers ---------- */
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function formatCode(code) {
+      return code.split('\n').map(function (line) {
+        var hashIdx = line.indexOf('#');
+        if (hashIdx > -1) {
+          var codePart = escapeHtml(line.slice(0, hashIdx));
+          var commentPart = escapeHtml(line.slice(hashIdx));
+          return codePart + '<span class="cm">' + commentPart + '</span>';
+        }
+        return escapeHtml(line);
+      }).join('\n');
+    }
+
+    /* ---------- notebook cells ---------- */
+    var CELLS = {
+      'c-01-1': {
+        inCode:
+          "import numpy as np\n\na = np.array([1, 2, 3])\nb = np.array([[1, 2, 3], [4, 5, 6]])\n\nprint(a)\nprint(b)",
+        out: "[1 2 3]\n[[1 2 3]\n [4 5 6]]"
+      },
+
+      'c-01-2': {
+        inCode:
+          "print(np.zeros((2, 3)))\nprint(np.ones((2, 3)))\nprint(np.full((2, 2), 7))\nprint(np.eye(3))",
+        out: "[[0. 0. 0.]\n [0. 0. 0.]]\n[[1. 1. 1.]\n [1. 1. 1.]]\n[[7 7]\n [7 7]]\n[[1. 0. 0.]\n [0. 1. 0.]\n [0. 0. 1.]]"
+      },
+
+      'c-01-3': {
+        inCode:
+          "print(np.arange(0, 10, 2))      # stop excluded, like range()\nprint(np.linspace(0, 1, 5))     # 5 numbers, endpoint included",
+        out: "[0 2 4 6 8]\n[0.   0.25 0.5  0.75 1.  ]"
+      },
+
+      'c-01-4': {
+        inCode:
+          "np.random.seed(0)\nprint(np.random.rand(2, 2))            # uniform floats in [0, 1)\n\nnp.random.seed(0)\nprint(np.random.randint(0, 10, size=5))  # random integers\n\nnp.random.seed(0)\nprint(np.random.permutation(5))        # shuffled [0,1,2,3,4]",
+        out: "[[0.5488135  0.71518937]\n [0.60276338 0.54488318]]\n[5 0 3 3 7]\n[2 0 1 3 4]"
+      },
+
+      'c-02-1': {
+        inCode:
+          "X = np.array([[1,2,3],[4,5,6],[7,8,9],[10,11,12]])\n\nprint(X.shape)   # (rows, cols)\nprint(X.ndim)    # number of dimensions\nprint(X.size)    # total elements",
+        out: "(4, 3)\n2\n12"
+      },
+
+      'c-02-2': {
+        inCode:
+          "print(X.T)                  # transpose: (4,3) -> (3,4)\n\nv = np.array([1, 2, 3])\nprint(v.shape)               # (3,)\nprint(v[:, None].shape)      # (3, 1) -- a column\nprint(v[None, :].shape)      # (1, 3) -- a row",
+        out: "[[ 1  4  7 10]\n [ 2  5  8 11]\n [ 3  6  9 12]]\n(3,)\n(3, 1)\n(1, 3)"
+      },
+
+      'c-03-1': {
+        inCode:
+          "arr = np.array([10, 20, 30, 40, 50])\n\nprint(arr[1:4])    # slice, stop excluded\nprint(arr[-1])     # last element\nprint(arr[::-1])   # reversed",
+        out: "[20 30 40]\n50\n[50 40 30 20 10]"
+      },
+
+      'c-03-2': {
+        inCode:
+          "X = np.array([[1,2],[3,1],[8,8],[9,7],[1,3],[8,9]])\nidx = np.array([0, 0, 1, 1, 0, 1])\n\nprint(X[idx == 0])\nprint(np.where(idx == 0))",
+        out: "[[1 2]\n [3 1]\n [1 3]]\n(array([0, 1, 4]),)"
+      },
+
+      'c-04-1': {
+        inCode:
+          "scores = np.array([[85, 90, 78, 92],\n                    [70, 88, 95, 60],\n                    [100, 75, 80, 85]])\n\nprint(scores.mean(axis=0))   # per quiz, across students -> shape (4,)\nprint(scores.mean(axis=1))   # per student, across quizzes -> shape (3,)",
+        out: "[85.         84.33333333 84.33333333 79.        ]\n[86.25 78.25 85.  ]"
+      },
+
+      'c-06-1': {
+        inCode:
+          "distances = [5.1, 2.0, 9.3, 1.0, 7.2]\n\nprint(np.min(distances))      # the smallest value\nprint(np.argmin(distances))   # the index of the smallest value",
+        out: "1.0\n3"
+      },
+
+      'c-06-2': {
+        inCode:
+          "u = np.array([3, 1, 2, 3, 1])\n\nprint(np.unique(u))      # sorted unique values\nprint(np.sort(u))        # sorted copy\nprint(np.argsort(u))     # indices that would sort u\nprint(np.clip(u, 1, 2))  # clamp into [1, 2]",
+        out: "[1 2 3]\n[1 1 2 3 3]\n[1 4 2 0 3]\n[1 1 2 1 1]"
+      },
+
+      'c-07-1': {
+        inCode:
+          "x = np.array([3, 4])\nprint(np.linalg.norm(x))   # Euclidean length: sqrt(3^2 + 4^2)",
+        out: "5.0"
+      },
+
+      'c-07-2': {
+        inCode:
+          "points = np.array([[0,0], [3,4], [1,1]])\ncentroid = np.array([0, 0])\n\nprint(np.linalg.norm(points - centroid, axis=1))",
+        out: "[0.         5.         1.41421356]"
+      },
+
+      'c-07-3': {
+        inCode:
+          "A = np.array([[1,2],[3,4]])\nB = np.array([[5,6],[7,8]])\n\nprint(A * B)     # elementwise: position-by-position\nprint(A @ B)     # matrix multiplication",
+        out: "[[ 5 12]\n [21 32]]\n[[19 22]\n [43 50]]"
+      },
+
+      'c-08-1': {
+        inCode:
+          "X = np.array([[1,1],[8,8],[1,2]])\ncentroids = np.array([[0,0],[10,10]])\n\ndiffs = X[:, None, :] - centroids[None, :, :]   # shape (m, K, n)\ndist  = np.linalg.norm(diffs, axis=2)           # shape (m, K)\nidx   = np.argmin(dist, axis=1)                 # shape (m,)\n\nprint(dist)\nprint(idx)",
+        out: "[[ 1.41421356 12.72792206]\n [11.3137085   2.82842712]\n [ 2.23606798 12.04159458]]\n[0 1 0]"
+      },
+
+      'c-09-1': {
+        inCode:
+          "a = np.array([1, 2, 3, 4])\nb = a[1:3]     # a view, not a copy\nb[0] = 99\nprint(a)       # a changed too",
+        out: "[ 1 99  3  4]"
+      },
+
+      'c-09-2': {
+        inCode:
+          "x = np.zeros(3, dtype=int)\nx[0] = 5.7\nprint(x)   # truncated, not rounded, no warning",
+        out: "[5 0 0]"
+      },
+
+      'c-09-3': {
+        inCode:
+          "print(0.1 + 0.2 == 0.3)\nprint(np.isclose(0.1 + 0.2, 0.3))",
+        out: "False\nTrue"
+      }
+    };
+
+    function renderCells() {
+      Object.keys(CELLS).forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var cell = CELLS[id];
+        el.innerHTML =
+          '<button class="copy-btn" type="button">Copy</button>' +
+          '<div class="nb-in"><span class="nb-tag">In</span><pre class="nb-code">' + formatCode(cell.inCode) + '</pre></div>' +
+          (cell.out ? '<div class="nb-out"><span class="nb-tag">Out</span><pre class="nb-code">' + escapeHtml(cell.out) + '</pre></div>' : '');
+        var btn = el.querySelector('.copy-btn');
+        btn.addEventListener('click', function () {
+          var text = cell.inCode;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              var old = btn.textContent;
+              btn.textContent = 'Copied';
+              setTimeout(function () { btn.textContent = old; }, 1200);
+            }).catch(function () { });
+          }
+        });
+      });
+    }
+
+    /* ---------- widget: shape / axis grid (hero, axis section) ---------- */
+    function renderGrid(id, data, opts) {
+      opts = opts || {};
+      var rows = data.length, cols = data[0].length;
+      var reducer = opts.reducer || 'sum';
+      function reduceArr(arr) {
+        var s = arr.reduce(function (a, b) { return a + b; }, 0);
+        return reducer === 'mean' ? s / arr.length : s;
+      }
+      function fmt(v) { return (typeof v === 'number' && v % 1 !== 0) ? v.toFixed(2) : v; }
+
+      var root = document.getElementById(id);
+      var caption = opts.caption ? '<div class="shape-caption">' + opts.caption + '</div>' : '';
+
+      var tableHtml = '<table class="agrid"><tr><td class="corner"></td>';
+      for (var j = 0; j < cols; j++) tableHtml += '<td class="cidx" data-c="' + j + '">' + j + '</td>';
+      tableHtml += '</tr>';
+      for (var i = 0; i < rows; i++) {
+        tableHtml += '<tr><td class="ridx" data-r="' + i + '">' + i + '</td>';
+        for (var k = 0; k < cols; k++) tableHtml += '<td class="cell" data-r="' + i + '" data-c="' + k + '">' + data[i][k] + '</td>';
+        tableHtml += '</tr>';
+      }
+      tableHtml += '</table>';
+
+      var btnHtml = '<div class="axis-controls">';
+      if (opts.showAxisButtons) {
+        btnHtml += '<button data-act="axis0" type="button">' + reducer + '(axis=0) — per column</button>';
+        btnHtml += '<button data-act="axis1" type="button">' + reducer + '(axis=1) — per row</button>';
+      }
+      btnHtml += '<button data-act="clear" type="button">Clear</button></div>';
+
+      root.innerHTML = '<div class="grid-wrap">' + caption + tableHtml + btnHtml +
+        '<div class="axis-result" id="' + id + '-res">' + (opts.hint || 'Click a row or column index.') + '</div></div>';
+
+      var resEl = root.querySelector('#' + id + '-res');
+      function clearHl() { root.querySelectorAll('.cell').forEach(function (c) { c.classList.remove('hl'); }); }
+
+      root.querySelectorAll('.ridx').forEach(function (elm) {
+        elm.addEventListener('click', function () {
+          clearHl();
+          var i = +elm.dataset.r;
+          root.querySelectorAll('.cell[data-r="' + i + '"]').forEach(function (c) { c.classList.add('hl'); });
+          resEl.innerHTML = '<b>X[' + i + ']</b> &rarr; [' + data[i].join(', ') + ']  &middot;  shape (' + cols + ',)';
+        });
+      });
+      root.querySelectorAll('.cidx').forEach(function (elm) {
+        elm.addEventListener('click', function () {
+          clearHl();
+          var j = +elm.dataset.c;
+          root.querySelectorAll('.cell[data-c="' + j + '"]').forEach(function (c) { c.classList.add('hl'); });
+          var col = data.map(function (r) { return r[j]; });
+          resEl.innerHTML = '<b>X[:, ' + j + ']</b> &rarr; [' + col.join(', ') + ']  &middot;  shape (' + rows + ',)';
+        });
+      });
+      root.querySelectorAll('[data-act]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var act = btn.dataset.act;
+          clearHl();
+          if (act === 'axis0') {
+            root.querySelectorAll('.cell').forEach(function (c) { c.classList.add('hl'); });
+            var res0 = [];
+            for (var j = 0; j < cols; j++) res0.push(fmt(reduceArr(data.map(function (r) { return r[j]; }))));
+            resEl.innerHTML = '<b>' + reducer + '(X, axis=0)</b> &rarr; [' + res0.join(', ') + ']  &middot;  shape (' + cols + ',) — one value per column';
+          } else if (act === 'axis1') {
+            root.querySelectorAll('.cell').forEach(function (c) { c.classList.add('hl'); });
+            var res1 = data.map(function (r) { return fmt(reduceArr(r)); });
+            resEl.innerHTML = '<b>' + reducer + '(X, axis=1)</b> &rarr; [' + res1.join(', ') + ']  &middot;  shape (' + rows + ',) — one value per row';
+          } else {
+            resEl.innerHTML = opts.hint || 'Click a row or column index.';
+          }
+        });
+      });
+    }
+
+    /* ---------- widget: reshape demo ---------- */
+    function renderReshapeDemo(id, flat, shapes, defaultIdx) {
+      var root = document.getElementById(id);
+      root.innerHTML =
+        '<div class="grid-wrap">' +
+        '<div class="reshape-grid" id="' + id + '-grid"></div>' +
+        '<div class="axis-controls" id="' + id + '-btns"></div>' +
+        '<div class="axis-result" id="' + id + '-label"></div>' +
+        '</div>';
+      var gridEl = root.querySelector('#' + id + '-grid');
+      var btnsEl = root.querySelector('#' + id + '-btns');
+      var labelEl = root.querySelector('#' + id + '-label');
+
+      function draw(shape) {
+        var r = shape[0], c = shape[1];
+        gridEl.style.gridTemplateColumns = 'repeat(' + c + ', 42px)';
+        gridEl.innerHTML = flat.map(function (v) { return '<div class="cell">' + v + '</div>'; }).join('');
+        gridEl.classList.remove('pulse');
+        void gridEl.offsetWidth;
+        gridEl.classList.add('pulse');
+        labelEl.innerHTML = '<b>X.reshape(' + r + ', ' + c + ')</b> &rarr; shape (' + r + ', ' + c + '), same ' + flat.length + ' values, new layout';
+      }
+      btnsEl.innerHTML = shapes.map(function (s) {
+        return '<button data-shape="' + s.join(',') + '" type="button">.reshape(' + s[0] + ', ' + s[1] + ')</button>';
+      }).join('');
+      btnsEl.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var parts = b.dataset.shape.split(',').map(Number);
+          draw(parts);
+        });
+      });
+      draw(shapes[defaultIdx || 0]);
+    }
+
+    /* ---------- widget: K-means style mask demo ---------- */
+    function renderMaskDemo(id, X, idx) {
+      var root = document.getElementById(id);
+      var ks = Array.from(new Set(idx)).sort();
+      var rowsHtml = '';
+      for (var i = 0; i < X.length; i++) {
+        rowsHtml += '<tr data-k="' + idx[i] + '"><td class="ridx">' + i + '</td><td class="cell">' + X[i][0] + '</td><td class="cell">' + X[i][1] + '</td><td><span class="chip k' + idx[i] + '">k=' + idx[i] + '</span></td></tr>';
+      }
+      var btns = ks.map(function (k) { return '<button data-k="' + k + '" type="button">X[idx == ' + k + ']</button>'; }).join('') +
+        '<button data-k="all" type="button">Clear</button>';
+      root.innerHTML =
+        '<div class="grid-wrap">' +
+        '<table class="agrid mask-table"><tr><td class="corner">i</td><td class="cidx">x</td><td class="cidx">y</td><td class="corner">idx[i]</td></tr>' + rowsHtml + '</table>' +
+        '<div class="axis-controls">' + btns + '</div>' +
+        '<div class="axis-result" id="' + id + '-res">Pick a cluster to see which rows X[idx == k] selects, and their mean.</div>' +
+        '</div>';
+      var resEl = root.querySelector('#' + id + '-res');
+      root.querySelectorAll('[data-k]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          root.querySelectorAll('tr[data-k]').forEach(function (tr) { tr.classList.remove('hl-row'); });
+          var k = btn.dataset.k;
+          if (k === 'all') {
+            resEl.innerHTML = 'Pick a cluster to see which rows X[idx == k] selects, and their mean.';
+            return;
+          }
+          var picked = [];
+          root.querySelectorAll('tr[data-k="' + k + '"]').forEach(function (tr) { tr.classList.add('hl-row'); });
+          X.forEach(function (pt, i) { if (String(idx[i]) === k) picked.push(pt); });
+          var mx = picked.reduce(function (a, p) { return a + p[0]; }, 0) / picked.length;
+          var my = picked.reduce(function (a, p) { return a + p[1]; }, 0) / picked.length;
+          resEl.innerHTML = '<b>X[idx == ' + k + ']</b> &rarr; ' + picked.length + ' points &rarr; mean = [' + mx.toFixed(2) + ', ' + my.toFixed(2) + ']  — this is centroids[' + k + '] in compute_centroids';
+        });
+      });
+    }
+
+    /* ---------- widget: broadcasting demo ---------- */
+    function renderBroadcastDemo(id, M, v) {
+      var root = document.getElementById(id);
+      var cols = v.length;
+      var vecRow = '<div class="bcast-row vec">' + v.map(function (x) { return '<div class="cell">' + x + '</div>'; }).join('') + '</div>';
+      var matRows = M.map(function (row) { return '<div class="bcast-row">' + row.map(function (x) { return '<div class="cell">' + x + '</div>'; }).join('') + '</div>'; }).join('');
+      var resultRows = M.map(function (row, i) { return '<div class="bcast-row">' + row.map(function (x, j) { return '<div class="cell">' + (x + v[j]) + '</div>'; }).join('') + '</div>'; }).join('');
+
+      root.innerHTML =
+        '<div class="grid-wrap">' +
+        vecRow +
+        '<div class="bcast-arrow">&uarr; vector v, shape (' + cols + ',) — reused for every row</div>' +
+        matRows +
+        '<div class="bcast-arrow">&uarr; matrix M, shape (' + M.length + ', ' + cols + ')</div>' +
+        '<div class="axis-controls"><button id="' + id + '-btn" type="button">Compute M + v &rarr;</button></div>' +
+        '<div class="bcast-result" id="' + id + '-result">' +
+        resultRows +
+        '<div class="bcast-arrow">M + v &rarr; shape (' + M.length + ', ' + cols + '), no loop required</div>' +
+        '</div>' +
+        '</div>';
+      root.querySelector('#' + id + '-btn').addEventListener('click', function () {
+        root.querySelector('#' + id + '-result').classList.toggle('show');
+      });
+    }
+
+    /* ---------- cheat sheet data ---------- */
+    var CHEAT = [
+      ['np.array(list)', 'Creation', 'Build an array from a Python list or nested list', 'np.array([1,2,3])'],
+      ['np.zeros(shape)', 'Creation', 'Array filled with zeros', 'np.zeros((2,3))'],
+      ['np.ones(shape)', 'Creation', 'Array filled with ones', 'np.ones((3,))'],
+      ['np.full(shape, v)', 'Creation', 'Array filled with a chosen value', 'np.full((2,2),7)'],
+      ['np.eye(n)', 'Creation', 'Identity matrix', 'np.eye(3)'],
+      ['np.arange(a,b,s)', 'Creation', 'Evenly spaced integers, stop excluded', 'np.arange(0,10,2)'],
+      ['np.linspace(a,b,n)', 'Creation', 'n evenly spaced floats, stop included', 'np.linspace(0,1,5)'],
+      ['np.random.seed(n)', 'Creation', 'Fix the random seed for reproducibility', 'np.random.seed(0)'],
+      ['np.random.rand(shape)', 'Creation', 'Uniform floats in [0, 1)', 'np.random.rand(2,2)'],
+      ['np.random.randn(shape)', 'Creation', 'Standard normal floats', 'np.random.randn(3)'],
+      ['np.random.randint(a,b,size)', 'Creation', 'Random integers in [a, b)', 'np.random.randint(0,10,size=5)'],
+      ['np.random.permutation(n)', 'Creation', 'Shuffled array of 0..n-1', 'np.random.permutation(5)'],
+      ['.shape', 'Shape', 'Tuple of dimension sizes', 'X.shape'],
+      ['.ndim', 'Shape', 'Number of dimensions', 'X.ndim'],
+      ['.size', 'Shape', 'Total number of elements', 'X.size'],
+      ['.reshape(r,c)', 'Shape', 'New shape, same data, same total size', 'X.reshape(3,4)'],
+      ['.ravel() / .flatten()', 'Shape', 'Collapse to 1D (ravel = view, flatten = copy)', 'X.ravel()'],
+      ['.T / np.transpose()', 'Shape', 'Swap axes — rows and columns', 'X.T'],
+      ['[:, None] / np.newaxis', 'Shape', 'Insert a new length-1 axis', 'v[:, None]'],
+      ['np.expand_dims(a, axis)', 'Shape', 'Function form of newaxis', 'np.expand_dims(v, 0)'],
+      ['np.concatenate([a,b])', 'Shape', 'Join arrays along an existing axis', 'np.concatenate([a,b],axis=0)'],
+      ['np.vstack([a,b])', 'Shape', 'Stack arrays as new rows', 'np.vstack([a,b])'],
+      ['np.hstack([a,b])', 'Shape', 'Stack arrays as new columns', 'np.hstack([a,b])'],
+      ['a[start:stop:step]', 'Indexing', 'Slice, stop excluded', 'a[1:4]'],
+      ['a[-1]', 'Indexing', 'Last element', 'a[-1]'],
+      ['a[::-1]', 'Indexing', 'Reversed array', 'a[::-1]'],
+      ['a[mask]', 'Indexing', 'Boolean mask — keep where True', 'X[idx == 0]'],
+      ['np.where(cond)', 'Indexing', 'Indices where condition is True', 'np.where(idx==0)'],
+      ['np.argwhere(cond)', 'Indexing', 'Like where, one row per match', 'np.argwhere(idx==0)'],
+      ['.sum(axis=) / np.sum', 'Reductions', 'Add elements, collapsing one axis', 'X.sum(axis=0)'],
+      ['.mean(axis=)', 'Reductions', 'Average, collapsing one axis', 'X.mean(axis=1)'],
+      ['.std(axis=) / .var(axis=)', 'Reductions', 'Spread of the values', 'X.std(axis=0)'],
+      ['.min() / .max()', 'Reductions', 'Smallest / largest value', 'X.max(axis=1)'],
+      ['np.argmin() / np.argmax()', 'Reductions', 'Index of the smallest / largest value', 'np.argmin(distances)'],
+      ['np.sort(a)', 'Reductions', 'Sorted copy', 'np.sort(u)'],
+      ['np.argsort(a)', 'Reductions', 'Indices that would sort a', 'np.argsort(u)'],
+      ['np.unique(a)', 'Reductions', 'Sorted unique values', 'np.unique(u)'],
+      ['np.clip(a, lo, hi)', 'Reductions', 'Clamp values into a range', 'np.clip(a,0,8)'],
+      ['np.abs / np.sqrt / np.exp', 'Reductions', 'Elementwise math', 'np.sqrt(a)'],
+      ['np.dot(a,b) / a @ b', 'Linear algebra', 'Matrix or vector product', 'A @ B'],
+      ['np.linalg.norm(v, axis=)', 'Linear algebra', 'Vector length / distance', 'np.linalg.norm(x-mu,axis=1)'],
+      ['np.linalg.inv(A)', 'Linear algebra', 'Matrix inverse', 'np.linalg.inv(A)'],
+      ['np.linalg.det(A)', 'Linear algebra', 'Determinant', 'np.linalg.det(A)'],
+      ['a.copy()', 'Hygiene', 'Independent copy — slices are views by default', 'b = a[1:3].copy()'],
+      ['a.astype(dtype)', 'Hygiene', 'Cast to another dtype', 'a.astype(float)'],
+      ['np.isnan(a) / np.isclose(a,b)', 'Hygiene', 'Safe comparisons for floats / NaN', 'np.isclose(0.1+0.2,0.3)']
+    ];
+
+    function renderCheat() {
+      var body = document.getElementById('cheat-body');
+      body.innerHTML = CHEAT.map(function (row) {
+        return '<tr><td class="fn">' + row[0] + '</td><td class="cat">' + row[1] + '</td><td>' + row[2] + '</td><td class="ex">' + row[3] + '</td></tr>';
+      }).join('');
+      var search = document.getElementById('cheat-search');
+      search.addEventListener('input', function () {
+        var q = search.value.toLowerCase();
+        body.querySelectorAll('tr').forEach(function (tr) {
+          tr.classList.toggle('hidden', q.length > 0 && tr.textContent.toLowerCase().indexOf(q) === -1);
+        });
+      });
+    }
+
+    /* ---------- sidenav active-link tracking ---------- */
+    function initSidenav() {
+      var sections = document.querySelectorAll('.section');
+      var links = document.querySelectorAll('.sidenav a');
+      var map = {};
+      links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            links.forEach(function (l) { l.classList.remove('active'); });
+            var l = map[e.target.id];
+            if (l) l.classList.add('active');
+          }
+        });
+      }, { rootMargin: '-15% 0px -70% 0px' });
+      sections.forEach(function (s) { obs.observe(s); });
+    }
+
+    /* ---------- init ---------- */
+    document.addEventListener('DOMContentLoaded', function () {
+      renderCells();
+      renderCheat();
+      initSidenav();
+
+      renderGrid('w-hero', [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]], {
+        caption: 'X.shape \u2192 (4, 3)  \u00b7  ndim \u2192 2  \u00b7  size \u2192 12',
+        hint: 'Click a row index (an example) or a column index (a feature).'
+      });
+
+      renderReshapeDemo('w-reshape', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [[1, 12], [2, 6], [3, 4], [4, 3], [6, 2], [12, 1]], 2);
+
+      renderMaskDemo('w-mask', [[1, 2], [3, 1], [8, 8], [9, 7], [1, 3], [8, 9]], [0, 0, 1, 1, 0, 1]);
+
+      renderGrid('w-axis', [[85, 90, 78, 92], [70, 88, 95, 60], [100, 75, 80, 85]], {
+        caption: 'rows = students (0\u20132)  \u00b7  columns = quizzes (0\u20133)',
+        showAxisButtons: true,
+        reducer: 'mean',
+        hint: 'Click a row (one student\u2019s scores) or column (one quiz across students).'
+      });
+
+      renderBroadcastDemo('w-broadcast', [[1, 2, 3], [4, 5, 6]], [100, 200, 300]);
+    });
+  </script>
+</body>
+
+</html>
